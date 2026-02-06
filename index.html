@@ -4,12 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rotating Numbers Clock</title>
+
   <style>
     :root{
       --bg:#0b0b0b;
       --fg:#f2f2f2;
       --muted:rgba(242,242,242,.65);
     }
+
     body{
       margin:0;
       height:100vh;
@@ -17,110 +19,113 @@
       place-items:center;
       background:var(--bg);
       color:var(--fg);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
     }
 
     .clock{
       width:min(70vmin, 520px);
-      aspect-ratio: 1;
-      border-radius: 50%;
+      aspect-ratio:1;
+      border-radius:50%;
       position:relative;
-      background: radial-gradient(circle at 50% 45%, #111 0%, #0a0a0a 60%, #060606 100%);
-      box-shadow: 0 20px 60px rgba(0,0,0,.6), inset 0 0 0 2px rgba(255,255,255,.06);
+      background:#0a0a0a;
+      box-shadow:
+        0 20px 60px rgba(0,0,0,.6),
+        inset 0 0 0 2px rgba(255,255,255,.08);
     }
 
-    /* center dot */
-    .pin{
-      position:absolute;
-      inset:50%;
-      width:12px; height:12px;
-      transform:translate(-50%,-50%);
-      border-radius:50%;
-      background:var(--fg);
-      box-shadow: 0 0 0 6px rgba(242,242,242,.08);
-      z-index: 5;
-    }
-
-    /* numbers ring layer */
-    .ring{
-      position:absolute;
-      inset:8%;
-      border-radius:50%;
-      transform: rotate(0deg);
-      z-index: 1;
-    }
-
-    .num{
-      position:absolute;
-      left:50%;
-      top:50%;
-      transform-origin: 0 0;
-      color:var(--fg);
-      font-weight:600;
-      letter-spacing: .02em;
-      opacity:.9;
-      user-select:none;
-    }
-
-    /* tick marks (optional minimal texture) */
+    /* subtle ticks */
     .ticks{
       position:absolute;
       inset:6%;
       border-radius:50%;
       background:
         conic-gradient(from -90deg,
-          rgba(242,242,242,.22) 0 1deg, transparent 1deg 30deg);
+          rgba(242,242,242,.25) 0 1deg,
+          transparent 1deg 30deg);
       mask: radial-gradient(circle, transparent 58%, #000 58%);
       opacity:.35;
-      z-index:0;
     }
 
-    /* hands layer */
+    /* numbers ring */
+    .ring{
+      position:absolute;
+      inset:8%;
+      border-radius:50%;
+      z-index:1;
+    }
+
+    .num{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform-origin: center;
+      font-size:1.1rem;
+      font-weight:600;
+      user-select:none;
+    }
+
+    /* hands */
     .hands{
       position:absolute;
       inset:0;
-      z-index: 3;
+      z-index:3;
     }
+
     .hand{
       position:absolute;
       left:50%;
       top:50%;
-      transform-origin: 50% calc(100% - 10px);
+      transform-origin:50% calc(100% - 10px);
       transform: translate(-50%,-100%) rotate(0deg);
       border-radius:999px;
       background:var(--fg);
-      box-shadow: 0 6px 18px rgba(0,0,0,.4);
     }
+
     .hand.hour{
       width:10px;
       height:28%;
       opacity:.95;
     }
+
     .hand.minute{
       width:7px;
       height:38%;
       opacity:.85;
     }
+
     .hand.second{
       width:2px;
       height:42%;
       background:var(--muted);
-      opacity:.9;
     }
 
-    /* subtle outer rim */
+    /* center pin */
+    .pin{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:12px;
+      height:12px;
+      transform:translate(-50%,-50%);
+      border-radius:50%;
+      background:var(--fg);
+      box-shadow:0 0 0 6px rgba(242,242,242,.08);
+      z-index:5;
+    }
+
     .rim{
       position:absolute;
       inset:0;
       border-radius:50%;
-      box-shadow: inset 0 0 0 2px rgba(242,242,242,.12);
-      z-index:4;
+      box-shadow: inset 0 0 0 2px rgba(242,242,242,.15);
       pointer-events:none;
+      z-index:6;
     }
   </style>
 </head>
+
 <body>
-  <div class="clock" aria-label="Rotating numbers clock">
+  <div class="clock">
     <div class="ticks"></div>
 
     <div class="ring" id="ring"></div>
@@ -136,49 +141,59 @@
   </div>
 
   <script>
-    // Build numbers around the circle
     const ring = document.getElementById("ring");
-    const radius = 42; // in % from center
-    for (let i = 1; i <= 12; i++) {
-      const angle = (i * 30) - 90; // -90 puts 12 at top
-      const el = document.createElement("div");
-      el.className = "num";
-      el.textContent = i;
-
-      // Place number at angle on ring
-      // translate from center, then offset with radius
-      el.style.transform =
-        `rotate(${angle}deg) translate(${radius}%, -50%) rotate(${-angle}deg) translate(-50%, -50%)`;
-
-      ring.appendChild(el);
-    }
-
     const hourEl = document.getElementById("hour");
     const minuteEl = document.getElementById("minute");
     const secondEl = document.getElementById("second");
+
+    function buildNumbers(){
+      ring.innerHTML = "";
+      const rect = ring.getBoundingClientRect();
+      const r = rect.width * 0.44;
+
+      for(let i=1;i<=12;i++){
+        const angle = (i * 30) - 90;
+        const el = document.createElement("div");
+        el.className = "num";
+        el.textContent = i;
+
+        el.style.transform =
+          `translate(-50%, -50%)
+           rotate(${angle}deg)
+           translate(${r}px, 0)
+           rotate(${-angle}deg)`;
+
+        ring.appendChild(el);
+      }
+    }
 
     function tick(){
       const now = new Date();
       const ms = now.getMilliseconds();
       const s = now.getSeconds() + ms/1000;
       const m = now.getMinutes() + s/60;
-      const h = (now.getHours()%12) + m/60;
+      const h = (now.getHours() % 12) + m/60;
 
-      const secDeg = s * 6;          // 360/60
+      const secDeg = s * 6;
       const minDeg = m * 6;
-      const hourDeg = h * 30;        // 360/12
+      const hourDeg = h * 30;
 
-      // Normal hands
       secondEl.style.transform = `translate(-50%,-100%) rotate(${secDeg}deg)`;
       minuteEl.style.transform = `translate(-50%,-100%) rotate(${minDeg}deg)`;
       hourEl.style.transform   = `translate(-50%,-100%) rotate(${hourDeg}deg)`;
 
-      // Twist: rotate the entire numbers ring (inverse of hour hand feels elegant)
+      /* twist: rotate numbers ring instead of hands */
       ring.style.transform = `rotate(${-hourDeg}deg)`;
 
       requestAnimationFrame(tick);
     }
-    requestAnimationFrame(tick);
+
+    window.addEventListener("load", () => {
+      buildNumbers();
+      requestAnimationFrame(tick);
+    });
+
+    window.addEventListener("resize", buildNumbers);
   </script>
 </body>
 </html>
