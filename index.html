@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rotating Numbers Clock</title>
+  <title>Twist Clock</title>
 
   <style>
     :root{
@@ -14,92 +14,161 @@
 
     body{
       margin:0;
-      height:100vh;
-      display:grid;
-      place-items:center;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       background:var(--bg);
       color:var(--fg);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      overflow:hidden;
     }
 
+    /* ===== Top-left tick string (7 ticks, step-based) ===== */
+    .tick-string{
+      position:fixed;
+      top:24px;
+      left:56px;
+      font-size:0.95rem;
+      letter-spacing:0.25em;
+      color:rgba(255,255,255,.85);
+      text-transform:lowercase;
+      white-space:nowrap;
+      pointer-events:none;
+      transition:transform 120ms steps(1, end);
+    }
+
+    /* ===== Bottom-right stack ===== */
+    .bottom-text{
+      position:fixed;
+      right:28px;
+      bottom:28px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:10px;
+      user-select:none;
+      pointer-events:none;
+    }
+
+    .date-text{
+      padding:4px 10px;
+      font-size:0.6rem;
+      font-weight:700;
+      letter-spacing:0.16em;
+      border:1px solid rgba(255,255,255,.35);
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      opacity:.9;
+      white-space:nowrap;
+    }
+
+    .page-title{
+      padding:4px 10px;
+      font-size:0.6rem;
+      font-weight:700;
+      letter-spacing:0.16em;
+      text-transform:uppercase;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.35);
+      border-radius:999px;
+      white-space:nowrap;
+    }
+
+    .footer-quote{
+      font-size:0.86rem;
+      color:rgba(242,242,242,.78);
+      letter-spacing:0.03em;
+      white-space:nowrap;
+    }
+
+    /* ===== Bottom-left symmetry link ===== */
+    .left-bg{
+      position:fixed;
+      left:28px;
+      bottom:28px;
+      font-size:0.9rem;
+      letter-spacing:0.05em;
+      user-select:none;
+    }
+
+    .left-bg a{
+      color:rgba(242,242,242,.65);
+      text-decoration:none;
+    }
+
+    .left-bg a:hover{
+      color:#fff;
+    }
+
+    /* ===== Clock ===== */
     .clock{
-      width:min(70vmin, 520px);
+      width:min(58vmin, 420px);
       aspect-ratio:1;
       border-radius:50%;
       position:relative;
       background:#0a0a0a;
-      box-shadow:
-        0 20px 60px rgba(0,0,0,.6),
-        inset 0 0 0 2px rgba(255,255,255,.08);
+      box-shadow:0 20px 60px rgba(0,0,0,.6);
+      overflow:hidden;
+      transform:translateY(-20px);
     }
 
-    /* subtle ticks */
-    .ticks{
+    .slow-ring{
       position:absolute;
-      inset:6%;
+      inset:4%;
       border-radius:50%;
-      background:
-        conic-gradient(from -90deg,
-          rgba(242,242,242,.25) 0 1deg,
-          transparent 1deg 30deg);
-      mask: radial-gradient(circle, transparent 58%, #000 58%);
-      opacity:.35;
+      box-shadow: inset 0 0 0 1px rgba(242,242,242,.08);
+      animation:slowRotate 3600s linear infinite;
     }
 
-    /* numbers ring */
+    @keyframes slowRotate{
+      from{transform:rotate(0deg)}
+      to{transform:rotate(-360deg)}
+    }
+
     .ring{
       position:absolute;
       inset:8%;
+      transition:transform 120ms steps(1, end);
+    }
+
+    .layer-ring{
+      position:absolute;
+      inset:6.2%;
       border-radius:50%;
-      z-index:1;
+      box-shadow: inset 0 0 0 1px rgba(242,242,242,.14);
     }
 
     .num{
       position:absolute;
       left:50%;
       top:50%;
-      transform-origin: center;
-      font-size:1.1rem;
+      font-size:1.05rem;
       font-weight:600;
+      opacity:.95;
       user-select:none;
     }
 
-    /* hands */
     .hands{
       position:absolute;
       inset:0;
-      z-index:3;
+      pointer-events:none;
     }
 
     .hand{
       position:absolute;
       left:50%;
-      top:50%;
-      transform-origin:50% calc(100% - 10px);
-      transform: translate(-50%,-100%) rotate(0deg);
+      bottom:50%;
+      transform-origin:50% 100%;
+      transform:translateX(-50%) rotate(0deg);
       border-radius:999px;
       background:var(--fg);
     }
 
-    .hand.hour{
-      width:10px;
-      height:28%;
-      opacity:.95;
-    }
+    .hand.hour{width:10px;height:28%}
+    .hand.minute{width:7px;height:29%}
+    .hand.second{width:2px;height:30%;background:var(--muted)}
 
-    .hand.minute{
-      width:7px;
-      height:38%;
-      opacity:.85;
-    }
-
-    .hand.second{
-      width:2px;
-      height:42%;
-      background:var(--muted);
-    }
-
-    /* center pin */
     .pin{
       position:absolute;
       left:50%;
@@ -109,26 +178,40 @@
       transform:translate(-50%,-50%);
       border-radius:50%;
       background:var(--fg);
-      box-shadow:0 0 0 6px rgba(242,242,242,.08);
-      z-index:5;
     }
 
-    .rim{
+    .pill{
       position:absolute;
-      inset:0;
-      border-radius:50%;
-      box-shadow: inset 0 0 0 2px rgba(242,242,242,.15);
+      padding:4px 10px;
+      font-size:0.6rem;
+      font-weight:700;
+      letter-spacing:0.16em;
+      border:1px solid rgba(255,255,255,.35);
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      white-space:nowrap;
       pointer-events:none;
-      z-index:6;
+    }
+
+    .ampm{
+      left:50%;
+      top:50%;
+      transform:translate(calc(-50% + 82px), -50%);
     }
   </style>
 </head>
 
 <body>
-  <div class="clock">
-    <div class="ticks"></div>
 
+  <!-- Tick string (7 words) -->
+  <div class="tick-string" id="tickString">
+    tick tick tick tick tick tick tick
+  </div>
+
+  <div class="clock">
+    <div class="slow-ring"></div>
     <div class="ring" id="ring"></div>
+    <div class="layer-ring"></div>
 
     <div class="hands">
       <div class="hand hour" id="hour"></div>
@@ -137,63 +220,87 @@
     </div>
 
     <div class="pin"></div>
-    <div class="rim"></div>
+    <div class="pill ampm" id="ampm">AM</div>
+  </div>
+
+  <div class="bottom-text">
+    <div class="date-text" id="dateText">01 JAN 2026</div>
+    <div class="page-title">If the code works, don't touch it.</div>
+    <div class="footer-quote">
+      Time is a valuable thing; watch it pass by as the pendulum swings. ~ MnM
+    </div>
+  </div>
+
+  <div class="left-bg">
+    <a href="https://aisahihu.me" target="_blank" rel="noopener">sinπ</a>
   </div>
 
   <script>
     const ring = document.getElementById("ring");
+    const tickString = document.getElementById("tickString");
     const hourEl = document.getElementById("hour");
     const minuteEl = document.getElementById("minute");
     const secondEl = document.getElementById("second");
+    const ampmEl = document.getElementById("ampm");
+    const dateText = document.getElementById("dateText");
+
+    let lastSecond = null;
 
     function buildNumbers(){
-      ring.innerHTML = "";
-      const rect = ring.getBoundingClientRect();
-      const r = rect.width * 0.44;
-
+      ring.innerHTML="";
+      const r = ring.getBoundingClientRect().width * 0.44;
       for(let i=1;i<=12;i++){
-        const angle = (i * 30) - 90;
-        const el = document.createElement("div");
-        el.className = "num";
-        el.textContent = i;
-
-        el.style.transform =
-          `translate(-50%, -50%)
-           rotate(${angle}deg)
-           translate(${r}px, 0)
-           rotate(${-angle}deg)`;
-
-        ring.appendChild(el);
+        const a=i*30-90;
+        const n=document.createElement("div");
+        n.className="num";
+        n.textContent=i;
+        n.style.transform=
+          `translate(-50%,-50%) rotate(${a}deg) translate(${r}px) rotate(${-a}deg)`;
+        ring.appendChild(n);
       }
     }
 
-    function tick(){
-      const now = new Date();
-      const ms = now.getMilliseconds();
-      const s = now.getSeconds() + ms/1000;
-      const m = now.getMinutes() + s/60;
-      const h = (now.getHours() % 12) + m/60;
-
-      const secDeg = s * 6;
-      const minDeg = m * 6;
-      const hourDeg = h * 30;
-
-      secondEl.style.transform = `translate(-50%,-100%) rotate(${secDeg}deg)`;
-      minuteEl.style.transform = `translate(-50%,-100%) rotate(${minDeg}deg)`;
-      hourEl.style.transform   = `translate(-50%,-100%) rotate(${hourDeg}deg)`;
-
-      /* twist: rotate numbers ring instead of hands */
-      ring.style.transform = `rotate(${-hourDeg}deg)`;
-
-      requestAnimationFrame(tick);
+    function formatDate(d){
+      return d.toLocaleDateString("en-GB",{
+        day:"2-digit",
+        month:"short",
+        year:"numeric"
+      }).toUpperCase();
     }
 
-    window.addEventListener("load", () => {
+    function update(){
+      const now=new Date();
+      const h=now.getHours();
+      const m=now.getMinutes();
+      const s=now.getSeconds();
+      const h12=h%12;
+
+      hourEl.style.transform=`translateX(-50%) rotate(${h12*30+m*0.5}deg)`;
+      minuteEl.style.transform=`translateX(-50%) rotate(${m*6}deg)`;
+      secondEl.style.transform=`translateX(-50%) rotate(0deg)`;
+
+      if (s !== lastSecond){
+        ring.style.transform = `rotate(${-s * 6}deg)`;
+        tickString.style.transform = `translateX(${-s * 6}px)`;
+        lastSecond = s;
+      }
+
+      ampmEl.textContent=h<12?"AM":"PM";
+      dateText.textContent=formatDate(now);
+    }
+
+    function animate(){
+      update();
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener("load",()=>{
       buildNumbers();
-      requestAnimationFrame(tick);
+      animate();
     });
 
-    window.addEventListener("resize", buildNumbers);
+    window.addEventListener("resize",buildNumbers);
   </script>
+
 </body>
 </html>
